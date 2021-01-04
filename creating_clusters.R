@@ -3,8 +3,8 @@
 # and create clusters on customers and cars
 
 # TO DO
-# Check for cars dataset
-# work out cluster for cars more likely to have a claim
+# Create scatter plot, claim amount vs model reliability (% likelihood to claim)
+# use scatter to work out cluster for cars s
 # describe cluster, types of car, age, etc.
 
 # Load libraries
@@ -22,6 +22,9 @@ insurance_policies_df$birthdate_ymd <- as_date(insurance_policies_df$birthdate, 
 insurance_policies_df$customer_age <- (Sys.Date() - insurance_policies_df$birthdate_ymd)/365.25
 insurance_policies_df$car_age <- year(Sys.Date()) - insurance_policies_df$car_year
 
+redish_colours <- c("Orange","Pink","Yellow","Crimson","Goldenrod","Red","Fuscia","Mauv")
+insurance_policies_df$car_color_broad <- ifelse(insurance_policies_df$car_color %in% redish_colours,'Red spectrum','Blue spectrum')
+
 insurance_policies_df$claimed <- ifelse(insurance_policies_df$claim_freq>0,TRUE,FALSE)
 
 insurance_policies_df$claim_amt_number <- as.numeric(substr(insurance_policies_df$claim_amt,2,nchar(insurance_policies_df$claim_amt)))
@@ -31,27 +34,27 @@ insurance_policies_df$avg_claim_amount <- ifelse(insurance_policies_df$claim_fre
 
 insurance_policies_df$car_kids_driving <- ifelse(insurance_policies_df$kids_driving>0,TRUE,FALSE)
 
-# testing area
-test <- head(insurance_policies_df,20)
-as_date(test$birthdate, format = "%m/%d/%Y")
-age <- (Sys.Date() - as_date(test$birthdate, format = "%m/%d/%Y"))/365.25
-as.numeric(substr(test$claim_amt,2,nchar(test$claim_amt)))
+x <- insurance_policies_df$car_age
+insurance_policies_df$car_age_band <- case_when(
+  x <= 10 ~ "0-10",
+  x <= 20 ~ "11-20",
+  x > 20 ~ "20+",
+  TRUE ~ as.character(x)
+)
 
 # Splitting datasets
-customer_df <- insurance_policies_df %>% select("ID","avg_claim_amount","customer_age","marital_status","gender","parent","education","household_income_number")
-car_df <- insurance_policies_df %>% select("ID","avg_claim_amount","car_age","car_use","car_make","car_model","car_color","coverage_zone","car_kids_driving")
+customer_df <- insurance_policies_df %>% select("ID","claimed","avg_claim_amount","customer_age","marital_status","gender","parent","education","household_income_number")
+car_df <- insurance_policies_df %>% select("ID","claimed","avg_claim_amount","car_age_band","car_use","car_make","car_model","car_color_broad","coverage_zone","car_kids_driving")
 
-#lm.fit <- lm(avg_claim_amount ~ car_age, data = car_df)
-#lm.fit2 <- lm(avg_claim_amount ~.-ID, data = car_df)
+car_df$claimed_val <- ifelse(car_df$claimed==TRUE,1,0)
+car_meta <- unique(car_df %>% select(!c("ID","claimed","avg_claim_amount")))
+car_meta$car_id <- 1:nrow(car_meta)
 
-#library(corrplot)
-#corrplot(cor(car_df %>% select(-ID)), type="upper", method="ellipse", tl.cex=0.9)
+car_df2 <- car_df %>% inner_join(car_meta)
 
-#library(cluster)
-#library(dplyr)
-#library(ggplot2)
-#library(readr)
-#library(Rtsne)
+car_plot <- car_df2 %>% 
+  select(car_id,claimed_val,avg_claim_amount) %>%
+  group_by(car_id) %>%
+  summarise(claimed = sum(claimed_val), claim_amount = mean(avg_claim_amount)) 
 
-#gower_dist <- daisy(car_df, metric = "gower")
-#gower_mat <- as.matrix(gower_dist)
+
