@@ -13,7 +13,7 @@ library(car)
 library(lubridate)
 
 # Load data
-insurance_policies_df <- read.csv('data/Insurance Policies.csv', stringsAsFactors = F)
+insurance_policies_df <- read.csv('data/Insurance Policies.csv') #, stringsAsFactors = F)
 
 # Creating new columns
 
@@ -56,5 +56,15 @@ car_plot <- car_df2 %>%
   select(car_id,claimed_val,avg_claim_amount) %>%
   group_by(car_id) %>%
   summarise(claimed = sum(claimed_val), claim_amount = mean(avg_claim_amount)) 
+
+
+### Testing clustering
+# https://towardsdatascience.com/hierarchical-clustering-on-categorical-data-in-r-a27e578f2995
+str(insurance_policies_df)
+
+library(cluster) 
+
+gower.dist <- daisy(insurance_policies_df[ ,c(3:11)], metric = c("gower"))
+
 
 
